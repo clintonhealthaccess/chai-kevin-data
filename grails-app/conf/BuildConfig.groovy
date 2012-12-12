@@ -77,6 +77,7 @@ grails.project.dependency.resolution = {
 		compile ":constraints:0.8.0"
 		compile ":springcache:1.3.1"
 		compile ":i18n-fields:0.6.3-CHAI"
+		compile ":rabbitmq-tasks:0.5.4"
 		
 		// application plugins
 		compile ':chai-locations:0.5-CHAI'
