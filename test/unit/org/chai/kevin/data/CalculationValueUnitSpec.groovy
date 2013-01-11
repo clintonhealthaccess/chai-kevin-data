@@ -1,4 +1,4 @@
-package org.chai.kevin
+package org.chai.kevin.data
 
 import grails.plugin.spock.UnitSpec;
 
@@ -128,7 +128,7 @@ class CalculationValueUnitSpec extends UnitSpec {
 		when:
 		value = new ModeValue([partialValue0, partialValue1], mode, null, new Location())
 		then:
-		value.getValueList().equals[v("false")])
+		value.getValueList().equals([v("false")])
 		
 		when:
 		value = new ModeValue([partialValue1, partialValue2], mode, null, new Location())
@@ -191,25 +191,25 @@ class CalculationValueUnitSpec extends UnitSpec {
 		
 		when:
 		value = new ModeValue([partialValue0], mode, null, new DataLocation())
-		expectedValue = type.getListType().getValueFromJaql(solar.value)
+		expectedValue = type.getValueFromJaql(solar.value)
 		then:
 		value.getValueList().equals([expectedValue])
 		
 		when:
 		value = new ModeValue([partialValue0, partialValue1], mode, null, new Location())
-		expectedValue = type.getListType().getValueFromJaql(nationalGrid.value)
+		expectedValue = type.getValueFromJaql(nationalGrid.value)
 		then:
 		value.getValueList().equals([expectedValue])
 		
 		when:
 		value = new ModeValue([partialValue1, partialValue2], mode, null, new Location())
-		expectedValue = type.getListType().getValueFromJaql(solar.value)
+		expectedValue = type.getValueFromJaql(solar.value)
 		then:
 		value.getValueList().equals([expectedValue])
 		
 		when:
 		value = new ModeValue([partialValue0, partialValue2, partialValue3], mode, null, new Location())
-		def expectedValues = [type.getListType().getValueFromJaql(none.value), type.getListType().getValueFromJaql(solar.value)]
+		def expectedValues = [type.getValueFromJaql(none.value), type.getValueFromJaql(solar.value)]
 		then:
 		value.getValueList().equals(expectedValues)
 		
@@ -297,7 +297,7 @@ class CalculationValueUnitSpec extends UnitSpec {
 		partialValue = new ModePartialValue(value: Value.NULL_INSTANCE())
 		value = new ModeValue([partialValue], mode, null, new DataLocation())
 		then:
-		value.getValue().equals(Value.NULL_INSTANCE())
+		value.getValue() == null
 	}
 	
 	def "test mode with null values on Location"() {
@@ -313,7 +313,7 @@ class CalculationValueUnitSpec extends UnitSpec {
 		value = new ModeValue([partialValue1, partialValue2], mode, null, new Location())
 		
 		then:
-		value.getValue().equals(Value.NULL_INSTANCE())
+		value.getValue() == null
 		
 	}
 	
@@ -382,13 +382,13 @@ class CalculationValueUnitSpec extends UnitSpec {
 		partialValue = new ModePartialValue(value: v("0"))
 		value = new ModeValue([partialValue], mode, null, new Location())
 		then:
-		value.getValue().equals(Value.NULL_INSTANCE())
+		value.getValue() == null
 		
 		when:
 		partialValue = new ModePartialValue(value: v("blah"))
 		value = new ModeValue([partialValue], mode, null, new Location())
 		then:
-		value.getValue().equals(Value.NULL_INSTANCE())
+		value.getValue() == null
 	}
 	
 	def "test aggregation with invalid values"() {

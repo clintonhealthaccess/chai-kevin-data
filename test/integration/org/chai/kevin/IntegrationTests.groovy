@@ -42,7 +42,8 @@ import org.chai.kevin.data.Enum
 import org.chai.kevin.data.EnumOption
 import org.chai.kevin.data.NormalizedDataElement;
 import org.chai.kevin.data.Source;
-import org.chai.kevin.data.Summ
+import org.chai.kevin.data.Summ;
+import org.chai.kevin.data.Mode
 import org.chai.kevin.data.Type;
 import org.chai.kevin.exports.CalculationExport
 import org.chai.kevin.exports.DataElementExport
@@ -55,6 +56,7 @@ import org.chai.kevin.value.CalculationPartialValue
 import org.chai.kevin.value.RawDataElementValue
 import org.chai.kevin.value.NormalizedDataElementValue
 import org.chai.kevin.value.SumPartialValue;
+import org.chai.kevin.value.ModePartialValue;
 import org.chai.kevin.value.Value;
 import org.chai.location.CalculationLocation;
 import org.chai.location.DataLocation;
@@ -210,6 +212,10 @@ abstract class IntegrationTests extends IntegrationSpec {
 		return new SumPartialValue(data: sum, period: period, location: location, type: type, numberOfDataLocations:0, value: value).save(failOnError: true)
 	}
 	
+	static ModePartialValue newModePartialValue(def mode, def period, def location, def type, def value) {
+		return new ModePartialValue(data: mode, period: period, location: location, type: type, value: value).save(failOnError: true)
+	}
+	
 	static RawDataElement newRawDataElement(def code, def type) {
 		return newRawDataElement(null, code, type)
 	}
@@ -282,6 +288,20 @@ abstract class IntegrationTests extends IntegrationSpec {
 	
 	static Summ newSum(def expression, def code) {
 		return newSum(null, expression, code)
+	}
+	
+	static def newMode(String expression, def code, def type) {
+		return newMode([:], expression, code, type)
+	}
+		
+	static Mode newMode(def names, def expression, def code, def type) {
+		def data = new Mode(names: names, expression: expression, code: code, type: type).save(failOnError: true, flush: true)
+		setLocaleValueInMap(data, names, "Names")
+		return data
+	}
+
+	static Mode newMode(def expression, def code, def type) {
+		return newMode([:], expression, code, type)
 	}
 	
 	static Enum newEnume(def code) {

@@ -453,6 +453,26 @@ public class ExpressionServiceSpec extends IntegrationTests {
 		then:
 		data.size() == 2
 		s(data.values()).equals(s([null, rawDataElement]))
+		
+		when:
+		data = expressionService.getDataInExpression("\$"+sum.id+1+"+", Data.class)
+		
+		then:
+		data.size() == 1
+		data == [('$'+(sum.id+'1')+""): null]
+	}
+	
+	def "data element in expression, raw data element and normalized data element"() {
+		setup:
+		def rawDataElement = newRawDataElement(CODE(1), Type.TYPE_NUMBER())
+		def data = null
+
+		when:
+		data = expressionService.getDataInExpression("\$"+rawDataElement.id, NormalizedDataElement.class)
+
+		then:
+		data.size() == 1
+		data == [('$'+rawDataElement.id+''): null]
 	}
 	
 	def "data element in expression when wrong format"() {

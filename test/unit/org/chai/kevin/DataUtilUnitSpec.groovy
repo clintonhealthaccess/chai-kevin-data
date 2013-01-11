@@ -8,7 +8,7 @@ import org.chai.kevin.data.Type;
 import org.chai.kevin.util.DataUtils;
 import org.chai.kevin.value.Value;
 
-public class UtilUnitSpec extends UnitSpec {
+public class DataUtilUnitSpec extends UnitSpec {
 	
 	def "test contains id"() {
 		expect:
@@ -78,18 +78,6 @@ public class UtilUnitSpec extends UnitSpec {
 		enumValue.equals("Value Text")
 		date.equals(DataUtils.formatDate(nowDate));	
 			
-	}
-
-	def "test format export code"(){
-		when:
-		def normalString = DataUtils.formatExportCode("blah")
-		def emptyString = DataUtils.formatExportCode("")
-		def nullString = DataUtils.formatExportCode(null)
-		
-		then:
-		normalString == "~blah~"
-		emptyString == "~~"
-		nullString == "~null~"
 	}
 	
 }

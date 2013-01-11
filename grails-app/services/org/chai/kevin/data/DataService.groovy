@@ -47,6 +47,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.springframework.transaction.annotation.Transactional;
+import org.hibernate.ObjectNotFoundException;
 import org.chai.kevin.util.DataUtils;
 
 class DataService {
@@ -66,7 +67,11 @@ class DataService {
 	
 	public <T extends Data<?>> T getData(Long id, Class<T> clazz) {
 		if (id == null) return null;
-		return (Data)sessionFactory.getCurrentSession().get(clazz, id);
+		try {
+			return (Data)sessionFactory.getCurrentSession().get(clazz, id);	
+		} catch (ObjectNotFoundException e) {
+			if (log.isWarnEnabled()) log.warn("object not found with id: "+placeholder+" and class: "+clazz, e);
+		}
 	}
 	
 	public <T extends Data<?>> T getDataByCode(String code, Class<T> clazz) {		

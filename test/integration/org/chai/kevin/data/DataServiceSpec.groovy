@@ -36,8 +36,6 @@ import org.chai.kevin.data.NormalizedDataElement;
 import org.chai.kevin.data.RawDataElement;
 import org.chai.kevin.data.Summ;
 import org.chai.kevin.data.Type;
-import org.chai.kevin.dsr.DsrIntegrationTests;
-import org.chai.kevin.dsr.DsrTarget;
 import org.chai.location.DataLocationType;
 import org.chai.location.DataLocation;
 import org.chai.location.Location;
@@ -65,7 +63,7 @@ class DataServiceSpec extends IntegrationTests {
 		def rawDataElement = newRawDataElement(CODE(1), Type.TYPE_NUMBER())
 		def normalizedDataElement = newNormalizedDataElement(CODE(2), Type.TYPE_NUMBER(), [:])
 		def sum = newSum("1", CODE(3))
-		def mode = newMode("1", CODE(4),  Type.TYPE_NUMBER())
+		def mode = newMode("1", CODE(4), Type.TYPE_NUMBER())
 		def aggregation = newAggregation("1", CODE(5))
 		def result = null
 		
@@ -118,20 +116,6 @@ class DataServiceSpec extends IntegrationTests {
 		dataService.getData(aggregation.id, NormalizedDataElement.class) == null
 		dataService.getData(aggregation.id, Summ.class) == null
 		dataService.getData(aggregation.id, Mode.class) == null
-	}
-
-	def "get calculation data from target with raw data element"() {
-		setup:
-		def rawDataElement = newRawDataElement(CODE(1), Type.TYPE_NUMBER())
-		def program = newReportProgram(CODE(1))
-		def category = DsrIntegrationTests.newDsrTargetCategory(CODE(2), program, 1)
-		def dsrTarget = DsrIntegrationTests.newDsrTarget(CODE(3), rawDataElement, category)
-		
-		when:
-		dsrTarget = DsrTarget.findByCode(CODE(3))
-		
-		then:
-		dataService.getData(dsrTarget.getData().id, Calculation.class) == null 
 	}
 		
 	def "get data element by code"() {

@@ -74,6 +74,7 @@ grails.project.dependency.resolution = {
             export = false
         }
 
+		compile ":hibernate:$grailsVersion"
 		compile ":constraints:0.8.0"
 		compile ":springcache:1.3.1"
 		compile ":i18n-fields:0.6.3-CHAI"
