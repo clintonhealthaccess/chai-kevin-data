@@ -37,6 +37,23 @@ public class DataUtilUnitSpec extends UnitSpec {
 			"\$10218[_].basic.monthly_targets.may + \n" +
 			"\$10218[_].basic.monthly_targets.june) == \n" +
 			"\$10218[_].basic.targets.target_number_of_cases", 10218)
+			
+		!DataUtils.containsId("count(\$)", 1)
+		!DataUtils.containsId("\$.work_history.primary_fop_function == true", 1)
+		DataUtils.containsId('count_by_function = if (\$3983 == "null") [] else (\$3983 -> group by function = \$.work_history.primary_fop_function into {function, head_count : count(\$)});\n\ncount_by_function;', 3983);
+		
+		DataUtils.containsId('doctor_count =((\$5829 -> filter \$.function=="doctor")[*].head_count -> sum());\n'+
+		'nurse_maternity_midwife_count =((\$5829 -> filter \$.function=="nurse_maternity_midwife")[*].head_count -> sum());\n'+
+		'nurse_a1_count =((\$5829 -> filter \$.function=="nurse_a1")[*].head_count -> sum());\n'+
+		'nurse_a2_count =((\$5829 -> filter \$.function=="nurse_a2")[*].head_count -> sum());\n'+
+		'nutritionist_count =((\$5829 -> filter \$.function=="nutritionist")[*].head_count -> sum());\n'+
+		'laboratory_technician_count =((\$5829 -> filter \$.function=="laboratory_technician")[*].head_count -> sum());\n'+
+		'social_worker_count =((\$5829 -> filter \$.function=="social_worker")[*].head_count -> sum());\n'+
+		'max_working_minutes_any_staff= 104640;\n'+
+		'total_service_minutes_per_doctor = \$4411 -> transform each service ( ( (\$5913-> filter \$.name== service.basic.service.service_type)[*].doctor_minute->sum()) *service.basic.targets.target_number_of_cases)->sum();\n'+
+		'ideal_number_of_doctor= roundup( (total_service_minutes_per_doctor) / (max_working_minutes_any_staff * \$5852));\n'+
+		'total_service_minutes_per_nurse_A1 = \$4411 -> transform each service ( (((\$5916-> filter \$.name==service.basic.service.service_type)[*].nurse_a1_minute->sum())*service.basic.targets.target_number_of_cases))->sum();\n'+
+		'', 5829)
 	}
 	
 	def "test parse date"() {

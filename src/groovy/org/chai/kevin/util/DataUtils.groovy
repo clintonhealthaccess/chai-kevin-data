@@ -47,6 +47,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ClassUtils;
@@ -62,6 +64,8 @@ import org.chai.kevin.Period;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.servlet.support.RequestContextUtils;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * @author Jean Kahigiso M.
@@ -69,6 +73,7 @@ import org.springframework.web.servlet.support.RequestContextUtils;
  */
 public class DataUtils {
 		
+	private static final Log log = LogFactory.getLog(DataUtils.class);
 	public final static String DEFAULT_TYPE_CODE_DELIMITER = ";";
 	
 	private final static String DATE_FORMAT = "dd-MM-yyyy";
@@ -101,9 +106,13 @@ public class DataUtils {
 	public static Date parseDate(String string) throws ParseException {
 		return new SimpleDateFormat(DATE_FORMAT).parse(string);
 	}
-	
+		
 	public static boolean containsId(String string, Long id) {
-		return string.matches(".*\\\$"+id+"(\\D|\\z|\\s)(.|\\s)*");
+		if (log.isDebugEnabled()) log.debug("containsId(string=${string}, id=${id})")
+		
+		Pattern pattern = Pattern.compile("\\\$"+id+"(\\D|\\z|\\s)");
+		Matcher matcher = pattern.matcher(string);
+		return matcher.find();
 	}
 	
 	public static Locale getCurrentLocale() {
