@@ -57,14 +57,34 @@ class DataService {
 	def valueService;
 	def sessionFactory;
 	
+	/**
+	 * Returns the enum with the given id or null if no such enum exists.
+	 * 
+	 * @param id the id 
+	 * @return the enum with the given id
+	 */
 	public Enum getEnum(Long id) {
 		return (Enum)sessionFactory.getCurrentSession().get(Enum.class, id);
 	}
 	
+	/**
+	 * Returns the enum with the give code or null if no such enum exists.
+	 * 
+	 * @param code the code
+	 * @return the enum with the given code
+	 */
 	public Enum findEnumByCode(String code) {
 		return Enum.findByCode(code, [cache: true])
 	}
 	
+	/**
+	 * Gets the data for the given id and the given class. If no such object exists, returns null.
+	 * If a data exists with the given id, but is not of a compatible class, returns null.
+	 * 
+	 * @param id the id
+	 * @param clazz the class 
+	 * @return the data or null if none is found
+	 */
 	public <T extends Data<?>> T getData(Long id, Class<T> clazz) {
 		if (id == null) return null;
 		try {
@@ -74,11 +94,25 @@ class DataService {
 		}
 	}
 	
+	/**
+	 * Gets the data for the given code and class. If no such object exists, returns null.
+	 * If a data exists with the given id, but is not of a compatible class, returns null.
+	 *
+	 * @param code the code
+	 * @param clazz the class
+	 * @return the data or null if none is found
+	 */
 	public <T extends Data<?>> T getDataByCode(String code, Class<T> clazz) {		
 		return (T) sessionFactory.getCurrentSession().createCriteria(clazz)
 		.add(Restrictions.eq("code", code)).uniqueResult();
 	}
 	
+	/**
+	 * Saves the data, bypassing grails validation.
+	 *
+	 * @param data the data to save
+	 * @return the saved data
+	 */
 	public <T extends Data<?>> T save(T data) {
 		// we bypass validation in case there's something
 		// it should be saved anyway
@@ -86,9 +120,12 @@ class DataService {
 	}
 	
 	/**
+	 * Deletes the given data. If that data still has value associated with it
+	 * or if it is referenced by a normalized data element or a calculation, throws an 
+	 * @IllegalArgumentException.
 	 * 
 	 * @throws IllegalArgumentException if the data element has values associated to it
-	 * @param element
+	 * @param data the data to delete
 	 */
 	public void delete(Data data) {
 		if (!getReferencingData(data).isEmpty()) throw new IllegalArgumentException("other data are still referencing the element being deleted")
@@ -96,6 +133,17 @@ class DataService {
 		else data.delete();
 	}
 	
+	/**
+	 * Returns all the data that directly reference the given data. For example, if
+	 * calculation $3 is $1 + $2, then calling this method with $1 as a parameter would return
+	 * a set containing calculation $3. Note that this is not transitive and will only return
+	 * the data that directly references the given data.
+	 *
+	 * Calling this is the same as getting the union of getReferencingNormalizedDataElement and getReferencingCalculation.
+	 * 
+	 * @param data the data to get the referencing data for
+	 * @return a set of the referencing data
+	 */
 	public Set<Data<?>> getReferencingData(Data data) {
 		def result = []
 		result.addAll(getReferencingNormalizedDataElements(data))
@@ -103,6 +151,15 @@ class DataService {
 		return result
 	}
 	
+	/**
+	 * Returns all the normalized data elements that directly reference the given data. For example, if
+	 * normalized data element $3 is $1 + $2, then calling this method with $1 as a parameter would return
+	 * a set containing calculation $3. Note that this is not transitive and will only return
+	 * the data that directly references the given data.
+	 *
+	 * @param data the data to get the referencing data for
+	 * @return a set of the referencing normalized data element
+	 */
 	public List<NormalizedDataElement> getReferencingNormalizedDataElements(Data data) {
 		def criteria = sessionFactory.currentSession.createCriteria(NormalizedDataElement.class);
 		def list = criteria.add(Restrictions.like("expressionMapString", "\$"+data.id, MatchMode.ANYWHERE)).list()
@@ -113,6 +170,15 @@ class DataService {
 		}
 	}
 	
+	/**
+	 * Returns all the calculations that directly reference the given data. For example, if
+	 * calculation $3 is $1 + $2, then calling this method with $1 as a parameter would return
+	 * a set containing calculation $3. Note that this is not transitive and will only return
+	 * the data that directly references the given data.
+	 *
+	 * @param data the data to get the referencing data for
+	 * @return a set of the referencing normalized data element
+	 */
 	public List<Calculation> getReferencingCalculations(Data data) {
 		def criteria = sessionFactory.currentSession.createCriteria(Calculation.class);
 		def list = criteria.add(Restrictions.like("expression", "\$"+data.id, MatchMode.ANYWHERE)).list()
@@ -121,7 +187,17 @@ class DataService {
 		}
 	}
 	
-    public <T extends Data> List<T> searchData(Class<T> clazz, String text, List<String> allowedTypes, Map<String, String> params) {
+	/**
+	 * Searches the data with the given text. Searches the code, name, info and type fields. Restricts the search
+	 * to the given allowed types and class.
+	 *
+	 * @param clazz the class for which to search data
+	 * @param text the string the search for
+	 * @param allowedTypes types for which the search will be done
+	 * @param params the map with sort, order, offset and max information for the search
+	 * @return the list of data that matches
+	 */
+	public <T extends Data> List<T> searchData(Class<T> clazz, String text, List<String> allowedTypes, Map<String, String> params) {
 		def dbFieldName = 'names_' + DataUtils.getCurrentLocale().getLanguage();
 		def criteria = clazz.createCriteria()
 		def data = criteria.list(offset:params.offset, max:params.max, sort:params.sort ?:"id", order: params.order ?:"asc"){

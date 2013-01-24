@@ -57,6 +57,29 @@ public class RefreshValueService {
 		return transactionTemplate;
 	}
 	
+	private static List<?> NULL_LIST = new ArrayList();
+	
+	static{
+		NULL_LIST.add(null);
+	}
+	
+	private void removeNulls(Collection<?> list) {
+		list.removeAll(NULL_LIST);
+	}
+	
+	/**
+	 * Refreshes the given normalized data element and all its dependencies, in the order they are required. For example if
+	 * NDE $45 refers to NDE $199, $199 will be refreshed first, then $45. Returns all normalized data elements that have
+	 * been refreshed. This method will modify the values in the database or create new ones. It will also set the last 
+	 * refreshed flag on all refreshed normalized data elements to the current timestamp.
+	 * 
+	 * If a progress instance is passed as the progress parameter, that object will be updated with the information about
+	 * the progress of the refresh. Can be null.
+	 * 
+	 * @param normalizedDataElement the normalized data element to refresh
+	 * @param progress the progress that will be updated or null if not desired
+	 * @return the list of normalized data elements which have been refreshed
+	 */
 	@Transactional(readOnly = true)
 	public List<NormalizedDataElement> refreshNormalizedDataElement(NormalizedDataElement normalizedDataElement, Progress progress) {
 		// set progress maximum - we count the number of NormalizedDataElement dependencies
@@ -74,16 +97,6 @@ public class RefreshValueService {
 		List<NormalizedDataElement> uptodateElements = new ArrayList<NormalizedDataElement>();
 		refreshDataElement(normalizedDataElement, uptodateElements, progress);
 		return uptodateElements;
-	}
-	
-	private static List<?> NULL_LIST = new ArrayList();
-	
-	static{
-		NULL_LIST.add(null);
-	}
-	
-	private void removeNulls(Collection<?> list) {
-		list.removeAll(NULL_LIST);
 	}
 	
 	private Date refreshDataElement(DataElement dataElement, List<NormalizedDataElement> uptodateElements, Progress progress) {
@@ -132,6 +145,14 @@ public class RefreshValueService {
 		}
 	}
 	
+	/**
+	 * Refreshes the values for the given data element, data location and period. If that data element
+	 * references another data element, then the referenced element is refreshed first.
+	 * 
+	 * @param dataElement the data element for which to refresh the values
+	 * @param dataLocation the data location for which to refresh the values
+	 * @param period the period for which to refresh the values
+	 */
 	@Transactional(readOnly = false)
 	public void refreshNormalizedDataElement(NormalizedDataElement dataElement, DataLocation dataLocation, Period period) {
 		refreshDataElement(dataElement, dataLocation, period, new ArrayList<NormalizedDataElement>());
@@ -182,7 +203,7 @@ public class RefreshValueService {
 		}
 	}
 	
-	public NormalizedDataElementValue updateNormalizedDataElementValue(NormalizedDataElement normalizedDataElement, DataLocation dataLocation, Period period) {
+	private NormalizedDataElementValue updateNormalizedDataElementValue(NormalizedDataElement normalizedDataElement, DataLocation dataLocation, Period period) {
 		NormalizedDataElementValue newValue = expressionService.calculateValue(normalizedDataElement, dataLocation, period);
 		NormalizedDataElementValue oldValue = valueService.getDataElementValue(normalizedDataElement, dataLocation, period);
 		
@@ -293,6 +314,13 @@ public class RefreshValueService {
 		}
 	}
 	
+	/**
+	 * Refreshes all normalized data elements and calculation (in that order). Builds a dependency tree and
+	 * refreshes first the root then the leaves, so at the end all data is guaranteed to be updated based
+	 * on up-to-date values. If a progress object is passed as a param, the progress will be updated.
+	 * 
+	 * @param progress the progress object to keep track of the progress or null if not desired
+	 */
 	@Transactional(readOnly = true)
 	public void refreshAll(final Progress progress) {
 		if (log.isDebugEnabled()) log.debug("refreshAll(progress)");
@@ -345,6 +373,12 @@ public class RefreshValueService {
 		}
 	}
 	
+	/**
+	 * Refreshes the specified calculation. If this calculation references a data element, it will
+	 * be refreshed first. The progress will be kept track of using the passed progress param.
+	 *
+	 * @param progress the progress object to keep track of the progress or null if not desired
+	 */
 	@Transactional(readOnly = true)
 	public void refreshCalculation(Calculation<?> calculation, Progress progress) {
 		// set progress maximum - we count the number of NormalizedDataElement dependencies
@@ -399,7 +433,7 @@ public class RefreshValueService {
 		}
 	}
 	
-	public void updateCalculationPartialValues(Calculation<?> calculation, CalculationLocation location, Period period) {
+	private void updateCalculationPartialValues(Calculation<?> calculation, CalculationLocation location, Period period) {
 		valueService.deleteValues(calculation, location, period);
 		
 		for (CalculationPartialValue newPartialValue : expressionService.calculatePartialValues(calculation, location, period)) {

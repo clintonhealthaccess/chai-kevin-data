@@ -57,12 +57,22 @@ import org.hibernate.criterion.Restrictions;
 import org.springframework.transaction.annotation.Transactional;
 import org.chai.kevin.util.DataUtils;
 
+/**
+ * This class deals with retrieving and storing values to the database. It
+ * does not trigger any expression calculation.
+ */
 public class ValueService {
 
 	private static final Log log = LogFactory.getLog(ValueService.class);
 	
 	private SessionFactory sessionFactory;
 	
+	/**
+	 * Saves the given value and sets the timestamp to the current time. This method will flush the session
+	 *
+	 * @param value the value to save
+	 * @return the saved value
+	 */
 	@Transactional(readOnly=false)
 	public <T extends StoredValue> T save(T value) {
 		log.debug("save(value="+value+")");
@@ -74,6 +84,14 @@ public class ValueService {
 		return value;
 	}
 	
+	/**
+	 * Retrieves the value corresponding to the given data, data location and period.
+	 *
+	 * @param data the data
+	 * @param dataLocation the data location
+	 * @param period the period
+	 * @return the corresponding value
+	 */
 	@Transactional(readOnly=true)
 	public <T extends DataValue> T getDataElementValue(DataElement<T> data, DataLocation dataLocation, Period period) {
 		if (log.isDebugEnabled()) log.debug("getDataElementValue(data="+data+", period="+period+", dataLocation="+dataLocation+")");
@@ -83,6 +101,17 @@ public class ValueService {
 		return result;
 	}
 	
+	/**
+	 * Searches for data values belonging to a data location whose name or code matches the
+	 * given search term.
+	 *
+	 * @param text the search term
+	 * @param data the data element whose values to search for
+	 * @param dataLocation the data location to restrict the search for or null to search all
+	 * @param period the period to restrict the search for or null to search in all periods
+	 * @param params the map with sort, order, offset and max information for the search
+	 * @return a list of values whose location code or name matches
+	 */
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly=true)
 	public <T extends DataValue> List<T> searchDataValues(String text, DataElement<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
@@ -120,6 +149,16 @@ public class ValueService {
 		if (params.get("max") != null) criteria.setMaxResults((Integer)params.get("max"));
 	}
 	
+	/**
+	 * Lists all the data values corresponding to the given data, data location and period. Data location
+	 * and period can be null, in which case it lists all the values for all data locations or periods.
+	 * 
+	 * @param data the data to list values for. Cannot be null.
+	 * @param dataLocation the data location to list values for, can be null
+	 * @param period the period to list values for, can be null
+	 * @param params the map with sort, order, offset and max information for the list
+	 * @return the list of values corresponding to the given params
+	 */
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly=true)
 	public <T extends DataValue> List<T> listDataValues(Data<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
@@ -133,6 +172,16 @@ public class ValueService {
 		return result;
 	}
 	
+	/**
+	 * Counts all the data values corresponding to the given data, data location and period. Data location
+	 * and period can be null, in which case it counts all the values for all data locations or periods.
+	 * 
+	 * @param data the data to list values for. Cannot be null.
+	 * @param dataLocation the data location to list values for, can be null
+	 * @param period the period to list values for, can be null
+	 * @param params the map with sort, order, offset and max information for the list
+	 * @return the number of values corresponding to the given params
+	 */
 	public <T extends DataValue> Long countDataValues(String text, Data<T> data, DataLocation dataLocation, Period period) {
 		if (log.isDebugEnabled()) log.debug("countDataValues(data="+data+", period="+period+", dataLocation="+dataLocation+")");
 		Criteria criteria = getCriteria(data, dataLocation, period);
@@ -156,6 +205,15 @@ public class ValueService {
 		return criteria;
 	}
 	
+	/**
+	 * Returns the calculation value corresponding the given calculation, location, period and set of location types.
+	 *
+	 * @param calculation the calculation for which to retrieve the value
+	 * @param location the location for which to retrieve the value
+	 * @param period the period for which to retrieve the value
+	 * @param types the types for which to retrieve the value
+	 * @return the calculation value
+	 */
 	@Transactional(readOnly=true)
 	public <T extends CalculationPartialValue> CalculationValue<T> getCalculationValue(Calculation<T> calculation, CalculationLocation location, Period period, Set<DataLocationType> types) {
 		if (log.isDebugEnabled()) log.debug("getCalculationValue(calculation="+calculation+", period="+period+", location="+location+", types="+types+")");
@@ -167,7 +225,7 @@ public class ValueService {
 	
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly=true)
-	public <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period) {
+	private <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period) {
 		return (List<T>)sessionFactory.getCurrentSession().createCriteria(calculation.getValueClass())
 		.add(Restrictions.eq("period", period))
 		.add(Restrictions.eq("location", location))
@@ -175,7 +233,7 @@ public class ValueService {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period, Set<DataLocationType> types) {
+	private <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period, Set<DataLocationType> types) {
 		return (List<T>)sessionFactory.getCurrentSession().createCriteria(calculation.getValueClass())
 		.add(Restrictions.eq("period", period))
 		.add(Restrictions.eq("location", location))
@@ -183,6 +241,13 @@ public class ValueService {
 		.add(Restrictions.in("type", types)).list();
 	}
 	
+	/**
+	 * Returns the number of values stored in the database for the given period and data.
+	 *
+	 * @param data the data for which to count values
+	 * @param period the period for which to count values
+	 * @return the number of stored values
+	 */
 	public Long getNumberOfValues(Data<?> data, Period period) {
 		return (Long)sessionFactory.getCurrentSession().createCriteria(data.getValueClass())
 		.add(Restrictions.eq("data", data))
@@ -191,6 +256,12 @@ public class ValueService {
 		.uniqueResult();
 	}
 	
+	/**
+	 * Returns the number of values stored in the database for the given period.
+	 *
+	 * @param period the period for which to count values
+	 * @return the number of stored values
+	 */
 	public Long getNumberOfValues(Period period) {
 		return (Long)sessionFactory.getCurrentSession().createCriteria(StoredValue.class)
 		.add(Restrictions.eq("period", period))
@@ -198,6 +269,12 @@ public class ValueService {
 		.uniqueResult();
 	}
 	
+	/**
+	 * Returns the number of values stored in the database for the given data.
+	 *
+	 * @param data the data for which to count the values
+	 * @return the number of stored values
+	 */
 	// if this is set readonly, it triggers an error when deleting a
 	// data element through DataElementController.deleteEntity
 	public Long getNumberOfValues(Data<?> data) {
@@ -207,6 +284,14 @@ public class ValueService {
 		.uniqueResult();
 	}
 	
+	/**
+	 * Returns the number of values stored in the database for the given data location restricted
+	 * to the given data class.
+	 *
+	 * @param dataLocation the data location for which to count the values
+	 * @param clazz the class to restrict the count for.
+	 * @return the number of stored values
+	 */
 	// if this is set readonly, it triggers an error when deleting a
 	// data element through DataElementController.deleteEntity
 	public Long getNumberOfValues(DataLocation location, Class<?> clazz) {
@@ -216,6 +301,15 @@ public class ValueService {
 		.uniqueResult();
 	}
 	
+	/** 
+	 * Returns the number of values stored in the database with the given data, status and period. The
+	 * data has to be a normalized data element otherwise it will throw an @IllegalArgumentException
+	 *
+	 * @param data the data for which to count the values. Has to be an instance of NormalizedDataElement.
+	 * @param status the status to restrict the count to
+	 * @param period the period for which to count the values for or null for all periods
+	 * @return the number of stored values
+	 */
 	public Long getNumberOfValues(Data<?> data, Status status, Period period) {
 		// TODO allow Calculation here
 		if (!(data instanceof NormalizedDataElement)) {
@@ -230,6 +324,13 @@ public class ValueService {
 			.uniqueResult();
 	}
 	
+	/**
+	 * Delete all the values that have the corresponding data, location and period.
+	 *
+	 * @param data the data for which to delete the values for, or null for all data
+	 * @param location the location for which to delete the values for, or null for all locations
+	 * @param period the period for which to delete the values for, or null all periods
+	 */
 	@Transactional(readOnly=false)
 	public void deleteValues(Data<?> data, CalculationLocation location, Period period) {
 		String valueClass = null;

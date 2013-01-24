@@ -57,6 +57,10 @@ import org.chai.location.DataLocationType;
 import org.hibernate.SessionFactory;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * This service deals with calculating the values of normalized data elements and calculations.
+ * It does not store the calculated values into the database, this has to be done separately.
+ */
 public class ExpressionService {
 
 	private static final Log log = LogFactory.getLog(ExpressionService.class);
@@ -79,6 +83,20 @@ public class ExpressionService {
 		}
 	}
 	
+	/**
+	 * Evaluates the list of partial values for a particular calculation, location and period. 
+	 * It will return at least as many partial values as there are data location types in the system. 
+	 * 
+	 * Using this method will not trigger caclulating the dependencies of the specified calculation
+	 * if there are any. They have to have been calculated beforehand for this method to return
+	 * correct result. None of the parameters can be null.
+	 *
+	 * @param calculation the calculation whose expression will be evaluated
+	 * @param location the location for which the expression will be evaluated
+	 * @param period the period for which the expression will be evaluated
+	 *
+	 * @return the list of partial values, at least one for each data location type in the system
+	 */
 	@Transactional(readOnly=true)
 	public <T extends CalculationPartialValue> List<T> calculatePartialValues(Calculation<T> calculation, CalculationLocation location, Period period) {
 		if (log.isDebugEnabled()) log.debug("calculatePartialValues(calculation="+calculation+",period="+period+",location="+location+")");
@@ -113,6 +131,19 @@ public class ExpressionService {
 		return result;
 	}
 	
+	/**
+	 * Evaluates the specified normalized data element for the given location and period. 
+	 *
+	 * Using this method will not trigger caclulating the dependencies of the specified normalized data element
+	 * if there are any. They have to have been calculated beforehand for this method to return
+	 * correct result. None of the parameters can be null.
+	 *
+	 * @param normalizedDataElement the normalized data element whose value to evaluate
+	 * @param dataLocation the data location for which to evaluate the normalized data element
+	 * @param period the period for which to evalute the normalized data element
+	 *
+	 * @return the value
+	 */
 	@Transactional(readOnly=true)
 	public NormalizedDataElementValue calculateValue(NormalizedDataElement normalizedDataElement, DataLocation dataLocation, Period period) {
 		if (log.isDebugEnabled()) log.debug("calculateValue(normalizedDataElement="+normalizedDataElement+",period="+period+",dataLocation="+dataLocation+")");
@@ -176,11 +207,22 @@ public class ExpressionService {
 		return statusValuePair;
 	}
 
-
+	/** 
+	 * Returns false if the given expression is invalid, true otherwise.
+	 * 
+	 * It will look for data in the formula, and validate them against the specified class.
+	 * If for example, the allowedClazz is NormalizedDataElement, and a calculation is found
+	 * in the expression, it will not be valid, because they are not compatible.
+	 *
+	 * @param expression the expression to validate
+	 * @param allowedClazz the class of data that is allowed inside this formula
+	 * 
+	 * @return true if valid, false if invalid
+	 */
 	// TODO do this for validation rules
 	@Transactional(readOnly=true)
-	public <T extends Data<?>> boolean expressionIsValid(String formula, Class<T> allowedClazz) throws IllegalArgumentException {
-		Map<String, T> variables = getDataInExpression(formula, allowedClazz);
+	public <T extends Data<?>> boolean expressionIsValid(String expression, Class<T> allowedClazz) throws IllegalArgumentException {
+		Map<String, T> variables = getDataInExpression(expression, allowedClazz);
 		
 		if (hasNullValues(variables.values())) return false;
 		
@@ -190,10 +232,18 @@ public class ExpressionService {
 			jaqlVariables.put(variable.getKey(), type.getJaqlValue(type.getPlaceHolderValue()));
 		}
 		
-		jaqlService.getJsonValue(formula, jaqlVariables);
+		jaqlService.getJsonValue(expression, jaqlVariables);
 		return true;
     }
 	
+	/**
+	 * Returns a map of all the data in the given expression. The key of the map will be the "$<dataId>" found in the
+	 * expression and the value the corresponding data or null if no data was found or was not of the specified class.
+	 * 
+	 * @param expression the expression from which to retrieve the data
+	 * @param clazz the clazz for which to retrieve the data
+	 * @return a map of the data
+	 */
 	@Transactional(readOnly=true)
     public <T extends Data<?>> Map<String, T> getDataInExpression(String expression, Class<T> clazz) {
     	if (log.isTraceEnabled()) log.trace("getDataInExpression(expression="+expression+", clazz="+clazz+")");
@@ -221,6 +271,15 @@ public class ExpressionService {
         return dataInExpression;
     }
 	
+	/**
+	 * Returns true if there are circular dependencies in the given normalized data element and false
+	 * if not. A circular dependency happens when an expression in a normalized data element references
+	 * itself either directly or one of the normalized data elements it uses references it.
+	 *
+	 * @param dataElement the normalized data element for which to check for circular dependency
+	 * @return true if there are circular dependencies in the given normalized data element and false
+	 * if not
+	 */
 	@Transactional(readOnly=true)
 	public boolean hasCircularDependency(NormalizedDataElement dataElement) {
 		List<NormalizedDataElement> path = new ArrayList<NormalizedDataElement>();
@@ -250,6 +309,14 @@ public class ExpressionService {
 		return false;
 	}
 
+	/**
+	 * Returns all the data variables found in the given expression. A data variable is 
+	 * when a data is referred to using the $<dataId> notation. Returns a set of 
+	 * $<dataId> in the expression.
+	 * 
+	 * @param expression an expression in which to look for data variables
+	 * @return a set of all "$<dataId>" in the expression
+	 */
     public static Set<String> getVariables(String expression) {
     	Set<String> placeholders = new HashSet<String>();
         if ( expression != null ) {
@@ -264,6 +331,16 @@ public class ExpressionService {
         return placeholders;
     }
     
+	/**
+	 * Replaces the data variables in the given expression by the corresponding string given
+	 * in the mapping passed as a parameter.
+	 * 
+	 * Example: given the expression "$1 + $2", and the mapping {"1": "test", "2": "blu"}, the
+	 * result would be "test + blu"
+	 * 
+	 * @param mapping the replacement mapping
+	 * @return the new expression with the replaced mapping
+	 */
     public static String convertStringExpression(String expression, Map<String, String> mapping) {
         String result = expression;
         for (Entry<String, String> entry : mapping.entrySet()) {
