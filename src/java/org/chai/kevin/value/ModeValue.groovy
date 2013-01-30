@@ -28,7 +28,8 @@ public class ModeValue extends CalculationValue<ModePartialValue> {
 
 	@Override
 	public boolean isNull(){
-		return getValue().isNull();
+		Value value = getValue()
+		return value == null || value.isNull();
 	}
 	
 	@Override
