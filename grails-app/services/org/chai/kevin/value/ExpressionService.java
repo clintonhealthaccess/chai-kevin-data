@@ -112,21 +112,36 @@ public class ExpressionService {
 		if (log.isDebugEnabled()) log.debug("calculatePartialValues(expression="+expression+",period="+period+",location="+location+")");
 		
 		Set<T> result = new HashSet<T>();
+		Map<DataLocationType, List<DataLocation>> dataLocationsByType = getDataLocationsByType(location);
+		
 		for (DataLocationType type : locationService.listTypes()) {
-			Set<DataLocationType> collectForType = new HashSet<DataLocationType>();
-			collectForType.add(type);
-			List<DataLocation> dataLocations = location.collectDataLocations(collectForType);
+			List<DataLocation> dataLocations = dataLocationsByType.get(type);
 			
-			if (!dataLocations.isEmpty()) {
+			if (dataLocations != null && !dataLocations.isEmpty()) {
 				Map<DataLocation, StatusValuePair> values = new HashMap<DataLocation, StatusValuePair>();
 				
+				Map cache = new HashMap();				
 				Type calculationType = calculation.getType();
-				for (DataLocation dataLocation : dataLocations) {						
-					StatusValuePair statusValuePair = getExpressionStatusValuePair(expression, calculationType, period, dataLocation, DataElement.class);
+				for (DataLocation dataLocation : dataLocations) {					
+					StatusValuePair statusValuePair = getExpressionStatusValuePair(expression, calculationType, period, dataLocation, DataElement.class, cache);
 					values.put(dataLocation, statusValuePair);
 				}
 				result.add(calculation.getCalculationPartialValue(expression, values, location, period, type));
 			}
+		}
+		return result;
+	}
+	
+	private Map<DataLocationType, List<DataLocation>> getDataLocationsByType(CalculationLocation location) {
+		Map<DataLocationType, List<DataLocation>> result = new HashMap<DataLocationType, List<DataLocation>>();
+		List<DataLocation> dataLocations = location.collectDataLocations(null);
+		for (DataLocation dataLocation : dataLocations) {
+			DataLocationType type = dataLocation.getType();
+			if (!result.containsKey(type)) {
+				result.put(type, new ArrayList<DataLocation>());
+			}
+			List<DataLocation> locations = result.get(type);
+			locations.add(dataLocation);
 		}
 		return result;
 	}
@@ -150,15 +165,39 @@ public class ExpressionService {
 		
 		String expression = normalizedDataElement.getExpression(period, dataLocation.getType().getCode());
 		
-		StatusValuePair statusValuePair = getExpressionStatusValuePair(expression, normalizedDataElement.getType(), period, dataLocation, DataElement.class);
+		StatusValuePair statusValuePair = getExpressionStatusValuePair(expression, normalizedDataElement.getType(), period, dataLocation, DataElement.class, null);
 		NormalizedDataElementValue expressionValue = new NormalizedDataElementValue(statusValuePair.value, statusValuePair.status, dataLocation, normalizedDataElement, period);
 		
 		if (log.isDebugEnabled()) log.debug("getValue()="+expressionValue);
 		return expressionValue;
 	}
 
+	private <T extends DataElement<S>, S extends DataValue> DataValue findInCache(Map<T, Map<CalculationLocation, S>> cache, T data, DataLocation dataLocation, Period period) {
+		if (cache == null) {
+			return valueService.getDataElementValue(data, dataLocation, period);
+		}
+		else {
+			if (!cache.containsKey(data)) {
+				if (log.isDebugEnabled()) log.debug("filling cache for data: "+data);
+
+				List<S> values = valueService.listDataValues(data, null, period, new HashMap());
+				Map<CalculationLocation, S> locationMap = new HashMap<CalculationLocation, S>();
+				for (S value : values) {
+					locationMap.put(value.getLocation(), value);
+				}
+				cache.put(data, locationMap);
+				
+				if (log.isDebugEnabled()) log.debug("done filling cache for data: "+data);
+			}
+			else {
+				if (log.isDebugEnabled()) log.debug("found values in cache for data: "+data);	
+			}
+			return cache.get(data).get(dataLocation);
+		}
+	}
+
 	// location has to be a dataLocation
-	private <T extends DataElement<S>, S extends DataValue> StatusValuePair getExpressionStatusValuePair(String expression, Type type, Period period, DataLocation dataLocation, Class<T> clazz) {
+	private <T extends DataElement<S>, S extends DataValue> StatusValuePair getExpressionStatusValuePair(String expression, Type type, Period period, DataLocation dataLocation, Class<T> clazz, Map cache) {
 		if (expressionLog.isInfoEnabled()) expressionLog.info("getting expression status-value for: expression={"+expression+"}, type={"+type+"}, period={"+period+"}, dataLocation={"+dataLocation+"}");
 		
 		if (log.isDebugEnabled())log.debug("getExpressionStatusValuePair(expression="+expression+", type="+type+", period="+period+", dataLocation="+dataLocation+", clazz="+clazz);
@@ -180,7 +219,7 @@ public class ExpressionService {
 				Map<String, Type> typeMap = new HashMap<String, Type>();
 				
 				for (Entry<String, T> entry : datas.entrySet()) {
-					DataValue dataValue = valueService.getDataElementValue(entry.getValue(), dataLocation, period);
+					DataValue dataValue = findInCache(cache, entry.getValue(), dataLocation, period);
 					Value value = dataValue==null?null:dataValue.getValue();
 					if (value == null) value = Value.NULL_INSTANCE();
 					valueMap.put(entry.getValue().getId().toString(), value);

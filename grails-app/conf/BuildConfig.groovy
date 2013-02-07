@@ -53,8 +53,8 @@ grails.project.dependency.resolution = {
 		 * Configure our resolver.
 		 */
 		def libResolver = new GrailsRepoResolver(null, null);
-		libResolver.addArtifactPattern("https://github.com/fterrier/repository/raw/master/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]")
-		libResolver.addIvyPattern("https://github.com/fterrier/repository/raw/master/[organisation]/[module]/ivys/ivy-[revision].xml")
+		libResolver.addArtifactPattern("https://github.com/clintonhealthaccess/repository/raw/master/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]")
+		libResolver.addIvyPattern("https://github.com/clintonhealthaccess/repository/raw/master/[organisation]/[module]/ivys/ivy-[revision].xml")
 		libResolver.name = "github"
 		resolver libResolver
     }
@@ -81,7 +81,7 @@ grails.project.dependency.resolution = {
 		compile ":rabbitmq-tasks:0.5.4"
 		
 		// application plugins
-		compile ':chai-locations:0.5-CHAI'
+		compile ':chai-locations:0.5.1-CHAI'
 		
 		test ":spock:0.6"
     }

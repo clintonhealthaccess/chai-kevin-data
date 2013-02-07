@@ -27,6 +27,7 @@ import org.chai.location.LocationService;
 import org.chai.task.Progress;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.FlushMode;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Projections;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -203,7 +204,7 @@ public class RefreshValueService {
 		}
 	}
 	
-	private NormalizedDataElementValue updateNormalizedDataElementValue(NormalizedDataElement normalizedDataElement, DataLocation dataLocation, Period period) {
+	public NormalizedDataElementValue updateNormalizedDataElementValue(NormalizedDataElement normalizedDataElement, DataLocation dataLocation, Period period) {
 		NormalizedDataElementValue newValue = expressionService.calculateValue(normalizedDataElement, dataLocation, period);
 		NormalizedDataElementValue oldValue = valueService.getDataElementValue(normalizedDataElement, dataLocation, period);
 		
@@ -218,7 +219,7 @@ public class RefreshValueService {
 		valueService.save(oldValue);
 		normalizedDataElement.setLastValueChanged(new Date());
 		
-		sessionFactory.getCurrentSession().evict(oldValue);
+		// sessionFactory.getCurrentSession().evict(oldValue);
 		return oldValue;
 	}
 	
@@ -228,8 +229,11 @@ public class RefreshValueService {
 		getTransactionTemplate().execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus arg0) {
+				sessionFactory.getCurrentSession().setFlushMode(FlushMode.COMMIT);
+				
 				NormalizedDataElement newNormalizedDataElement = dataService.getData(normalizedDataElement.getId(), NormalizedDataElement.class);
 				
+				Long count = 0L;
 				for (Iterator<Object[]> iterator = getCombinations(DataLocation.class); iterator.hasNext();) {
 					Object[] row = (Object[]) iterator.next();
 					DataLocation dataLocation = (DataLocation)row[0];
@@ -237,8 +241,9 @@ public class RefreshValueService {
 					
 					// TODO improve performance by getting all values at the same time
 					updateNormalizedDataElementValue(newNormalizedDataElement, dataLocation, period);
-					if (progress != null) progress.incrementProgress();
+					count++;
 				}
+				if (progress != null) progress.incrementProgress(count);
 				
 				updateSources(newNormalizedDataElement);
 				newNormalizedDataElement.setRefreshed(new Date());
@@ -433,24 +438,27 @@ public class RefreshValueService {
 		}
 	}
 	
-	private void updateCalculationPartialValues(Calculation<?> calculation, CalculationLocation location, Period period) {
+	public void updateCalculationPartialValues(Calculation<?> calculation, CalculationLocation location, Period period) {
 		valueService.deleteValues(calculation, location, period);
 		
 		for (CalculationPartialValue newPartialValue : expressionService.calculatePartialValues(calculation, location, period)) {
 			valueService.save(newPartialValue);
-			sessionFactory.getCurrentSession().evict(newPartialValue);
+			// sessionFactory.getCurrentSession().evict(newPartialValue);
 		}
 		calculation.setLastValueChanged(new Date());
 	}
 	
 	private void refreshCalculationOnly(final Calculation<?> calculation, final Progress progress) {
-		if (log.isDebugEnabled()) log.debug("refreshCalculation(calculation="+calculation+")");
+		if (log.isDebugEnabled()) log.debug("refreshCalculationOnly(calculation="+calculation+")");
 		
 		getTransactionTemplate().execute(new TransactionCallbackWithoutResult() {
 			@Override
 			protected void doInTransactionWithoutResult(TransactionStatus arg0) {
+				sessionFactory.getCurrentSession().setFlushMode(FlushMode.COMMIT);
+				
 				Calculation<?> newCalculation = dataService.getData(calculation.getId(), Calculation.class);
 				
+				Long count = 0L;
 				for (Iterator<Object[]> iterator = getCombinations(CalculationLocation.class); iterator.hasNext();) {
 					Object[] row = (Object[]) iterator.next();
 					CalculationLocation location = (CalculationLocation)row[0];
@@ -458,8 +466,9 @@ public class RefreshValueService {
 					
 					// TODO improve performance by getting all values at the same time
 					updateCalculationPartialValues(newCalculation, location, period);
-					if (progress != null) progress.incrementProgress();
+					count++;
 				}
+				if (progress != null) progress.incrementProgress(count);
 				
 				updateSources(newCalculation);
 				newCalculation.setRefreshed(new Date());

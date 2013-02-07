@@ -47,6 +47,7 @@ import org.chai.location.DataLocation;
 import org.chai.location.DataLocationType;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.FlushMode;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.Conjunction;
 import org.hibernate.criterion.Disjunction;
@@ -79,7 +80,6 @@ public class ValueService {
 		
 		value.setTimestamp(new Date());
 		sessionFactory.getCurrentSession().saveOrUpdate(value);
-		sessionFactory.getCurrentSession().flush();
 		
 		return value;
 	}
@@ -117,7 +117,7 @@ public class ValueService {
 	public <T extends DataValue> List<T> searchDataValues(String text, DataElement<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
 		if (log.isDebugEnabled()) log.debug("searchDataValues(text="+text+", data="+data+", period="+period+", dataLocation="+dataLocation+")");
 		Criteria criteria = getCriteria(data, dataLocation, period);
-		criteria.createAlias("location", "location");
+		if (dataLocation == null) criteria.createAlias("location", "location");
 		addSortAndLimitCriteria(criteria, params);
 		addSearchCriteria(criteria, text);
 		
@@ -141,9 +141,6 @@ public class ValueService {
 		if (params.containsKey("sort")) {
 			criteria.addOrder(params.get("order").equals("asc")?Order.asc(params.get("sort")+""):Order.desc(params.get("sort")+""));
 		}
-		else {
-			criteria.addOrder(Order.asc("location.code"));
-		}
 		
 		if (params.get("offset") != null) criteria.setFirstResult((Integer)params.get("offset"));
 		if (params.get("max") != null) criteria.setMaxResults((Integer)params.get("max"));
@@ -164,9 +161,9 @@ public class ValueService {
 	public <T extends DataValue> List<T> listDataValues(Data<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
 		if (log.isDebugEnabled()) log.debug("listDataValues(data="+data+", period="+period+", dataLocation="+dataLocation+")");
 		Criteria criteria = getCriteria(data, dataLocation, period);
-		criteria.createAlias("location", "location");
 		addSortAndLimitCriteria(criteria, params);
 		
+		criteria.setFlushMode(FlushMode.COMMIT);
 		List<T> result = criteria.list();
 		if (log.isDebugEnabled()) log.debug("listDataValues(...)=");
 		return result;
@@ -199,7 +196,10 @@ public class ValueService {
 		Criteria criteria = sessionFactory.getCurrentSession().createCriteria(data.getValueClass());
 		criteria.add(Restrictions.eq("data", data));
 		if (period != null) criteria.add(Restrictions.eq("period", period));
-		if (dataLocation != null) criteria.add(Restrictions.eq("location", dataLocation));
+		if (dataLocation != null) {
+			criteria.createAlias("location", "location");
+			criteria.add(Restrictions.eq("location", dataLocation));
+		}
 //		criteria.add(Restrictions.isNull("type"));
 		
 		return criteria;
@@ -233,7 +233,7 @@ public class ValueService {
 	}
 	
 	@SuppressWarnings("unchecked")
-	private <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period, Set<DataLocationType> types) {
+	public <T extends CalculationPartialValue> List<T> getPartialValues(Calculation<T> calculation, CalculationLocation location, Period period, Set<DataLocationType> types) {
 		return (List<T>)sessionFactory.getCurrentSession().createCriteria(calculation.getValueClass())
 		.add(Restrictions.eq("period", period))
 		.add(Restrictions.eq("location", location))
@@ -333,6 +333,7 @@ public class ValueService {
 	 */
 	@Transactional(readOnly=false)
 	public void deleteValues(Data<?> data, CalculationLocation location, Period period) {
+		if (log.isDebugEnabled()) log.debug("deleteValues(data="+data+", location="+location+", period="+period+")");
 		String valueClass = null;
 		if (data != null) valueClass = data.getValueClass().getName();
 		else valueClass = "StoredValue";

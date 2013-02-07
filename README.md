@@ -28,13 +28,12 @@ Calculations are used to aggregate data along the location tree structure given 
 
 There are 2 types of calculations, **sums**, **modes** and **aggregations**. Sums simply take a number value and sums it up the location hierarchy, with the option of getting the average as well. Modes count the number of times a certain value occurs inside a certain location, giving the option of retrieving the whole map (will be a map of value-number of times) or the biggest mode.
 
-values stored by data location type too 
-
+TODO values stored by data location type too 
 
 Data types
 ---
 
-Types define what kind of data is stored in a data element. There are simple and complex types, which allow to store almost any type of data. The types are defined using a JSON notation that's also described below:
+Types define what kind of data is stored in a data element. There are simple and complex types, which allow to store almost any type of data. The types can be retrieved and manipulated as an instance of the ```Type``` class. The types are defined using a JSON notation that's also described below:
 
 The following simple types are available:
 
@@ -60,6 +59,15 @@ So you can combine the complex types with simple types to create complex list an
 The JSON notation for that type would be
 
 	{type: list, list_type: {type: map, elements: [{name: "first_name", element_type: {type: string}}, {name: "last_name", element_type: {type: string}}, {name: "birthday", element_type: {type: date}}]}}
+	
+The ```Type``` class offers the following methods:
+
+TODO
+
+Values
+---
+
+TODO
 
 JAQL
 ---
@@ -73,6 +81,8 @@ Beside simple arithmetic expressions, JAQL allows for example to count the numbe
 You will have to store it in a normalized data element of type ```{type: number}```. Or for example, if you want to filter based on a certain last name:
 
 	$1 -> filter ($.last_name == "Smith")
+
+TODO explain null vs. isnull
 
 Class hierarchy & APIs
 ---
@@ -96,7 +106,14 @@ Data classes have corresponding value classes which describe how the values are 
 
 Classes which inherit the ```DataElement``` class (**raw data element** and **normalized data element**) each have one associated value for each data location and period. They are instances of the ```RawDataElementValue``` class and ```NormalizedDataElementValue``` class respectively.
 
+TODO explain value does not exist vs isNull
+- for raw data element
+- for normalized data element
+
 ##### Values for calculations
+
+TODO explain no value vs isNull
+TODO explain when values are skipped
 
 Classes which inherit the ```Calculation``` class each have one associated value for each location, period and data location type. This allows one to look at calculations at a higher level and filter by data location type. Those values are called **partial values** are instances of the ```CalculationPartialValue``` class (this class is abstract and each calculation has its corresponding concrete implementation of that class).
 

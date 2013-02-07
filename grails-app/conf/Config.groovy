@@ -23,16 +23,16 @@ log4j = {
     warn   'org.mortbay.log'
 }
 
-// rabbitmq
+i18nFields {
+	locales = ["en","fr"]
+	withlocale.disabled = true
+}
+
+// rabbitmq-tasks needs this so the tests work
 rabbitmq {
 	connectionfactory {
 		username = 'guest'
 		password = 'guest'
 		hostname = '127.0.0.1'
 	}
-}
-
-i18nFields {
-	locales = ["en","fr"]
-	withlocale.disabled = true
 }
