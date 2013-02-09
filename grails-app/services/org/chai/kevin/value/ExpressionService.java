@@ -184,6 +184,7 @@ public class ExpressionService {
 				Map<CalculationLocation, S> locationMap = new HashMap<CalculationLocation, S>();
 				for (S value : values) {
 					locationMap.put(value.getLocation(), value);
+					sessionFactory.getCurrentSession().evict(value);
 				}
 				cache.put(data, locationMap);
 				
@@ -223,9 +224,7 @@ public class ExpressionService {
 					Value value = dataValue==null?null:dataValue.getValue();
 					if (value == null) value = Value.NULL_INSTANCE();
 					valueMap.put(entry.getValue().getId().toString(), value);
-					typeMap.put(entry.getValue().getId().toString(), entry.getValue().getType());
-					
-					sessionFactory.getCurrentSession().evict(dataValue);
+					typeMap.put(entry.getValue().getId().toString(), entry.getValue().getType());					
 				}
 				if (expressionLog.isTraceEnabled()) expressionLog.trace("values and types: valueMap={"+valueMap+"}, typeMap={"+typeMap+"}");
 				

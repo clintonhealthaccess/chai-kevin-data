@@ -439,7 +439,7 @@ public class RefreshValueService {
 	}
 	
 	public void updateCalculationPartialValues(Calculation<?> calculation, CalculationLocation location, Period period) {
-		valueService.deleteValues(calculation, location, period);
+		//valueService.deleteValues(calculation, location, period);
 		
 		for (CalculationPartialValue newPartialValue : expressionService.calculatePartialValues(calculation, location, period)) {
 			valueService.save(newPartialValue);
@@ -457,6 +457,7 @@ public class RefreshValueService {
 				sessionFactory.getCurrentSession().setFlushMode(FlushMode.COMMIT);
 				
 				Calculation<?> newCalculation = dataService.getData(calculation.getId(), Calculation.class);
+				valueService.deleteValues(newCalculation, null, null);
 				
 				Long count = 0L;
 				for (Iterator<Object[]> iterator = getCombinations(CalculationLocation.class); iterator.hasNext();) {
