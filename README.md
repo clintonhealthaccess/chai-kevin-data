@@ -59,15 +59,61 @@ So you can combine the complex types with simple types to create complex list an
 The JSON notation for that type would be
 
 	{type: list, list_type: {type: map, elements: [{name: "first_name", element_type: {type: string}}, {name: "last_name", element_type: {type: string}}, {name: "birthday", element_type: {type: date}}]}}
-	
-The ```Type``` class offers the following methods:
 
-TODO
+When a type is of complex type, each nested type can be accessed using an *address* string. There are 2 sorts of addresses (also called *prefix* or *suffix* in this document and in the code, apologies for the confusion), generic addresses and specific addresses. For example, a generic address for the ```first_name``` field above would be ```[_].first_name``` whereas a specific would be ```[2].first_name``` (it would specifically refer to the third row of the list). Addresses are built by adding ```[_]``` for lists and ```.<element_key>``` for the maps.
+
+Let's take another example of type with nested maps :
+
+	- list (type: map)
+		- personal_information: map
+			- first_name: string
+			- last_name: string
+			- birthday: date
+		- work_history: map
+			- employer
+			- function
+			
+We would have the following generic addresses :
+
+	element					address
+	-------					-------
+	list		
+	elements of list		[_]
+	personal information	[_].personal_information
+	first name				[_].personal_information.first_name
+	last name				[_].personal_information.last_name
+	birthday				[_].personal_information.birthday
+	work history			[_].work_history
+	employer				[_].work_history.employer
+	function				[_].work_history.function
+
+The ```Type``` class also offers a bunch of methods to manipulate, transforma Value and Type objects. See the javadoc for more details.
 
 Values
 ---
 
-TODO
+To store values, we use instances of the **Value** class. It works similarly to the Type class as it holds the value in a JSON format. The JSON format to store a value is the following for the given types:
+
+	type			value						remarks
+	----			-----						-------
+	number			{"value": <number>}
+	string			{"value": <string>}
+	text			{"value": <text>}
+	enum			{"value": <enum_value>}
+	date			{"value": <date>}			format: dd-MM-yyyy
+	bool			{"value": <bool>}			format: true or false
+	
+	list			{"value": [<value_1>, <value_2>, ...]}
+	map				{"value": [{map_key:<key_1>, map_value:<value_for_key_1>}, {map_key: <key_2>, map_value:<value_for_key_2>}, …]}
+
+A value object is always paired with its corresponding type object, and the Type class contains several methods that help manipulate the value itself (cf. javadoc). The type is not saved with the value though, but taken externally. For example if one is manipulating a data element of type ```number```, it can be assumed that all values retrieved for this data element will be of hold ```number``` values.
+
+#### Null values
+
+A value can be ```null```, for which the JSON representation is ```{"value": null}```. To test if a value is null, use the ```isNull()``` method on the Value class. Null values are handled specially by the JAQL language explained below.
+
+
+TODO json attirbutes
 
 JAQL
 ---

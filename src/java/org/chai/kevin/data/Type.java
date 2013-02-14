@@ -51,7 +51,7 @@ public class Type extends JSONValue {
 	
 	public Type(String jsonValue) {
 		super(jsonValue);
-	}
+	}	
 	
 	private Type listType = null;
 	private Map<String, Type> elementMap = null;
@@ -77,6 +77,11 @@ public class Type extends JSONValue {
 		return getType() == ValueType.LIST || getType() == ValueType.MAP;
 	}
 	
+	/**
+	 * Returns the ValueType type of this type.
+	 * 
+	 * @return the ValueType type of this type.
+	 */
 	public ValueType getType() {
 		if (valueType == null) {
 			try {
@@ -92,6 +97,11 @@ public class Type extends JSONValue {
 		return valueType;
 	}
 	
+	/**
+	 * If this type has ValueType ENUM, returns the enum code associated to it
+	 *
+	 * @return the enum code associated to this type
+	 */
 	public String getEnumCode() {
 		if (enumCode == null) {
 			// TODO think that through
@@ -955,6 +965,7 @@ public class Type extends JSONValue {
 		
 	private String getDisplayedValue(final int indent, int currentIndent, final Integer numberOfLines, Integer currentNumberOfLines) {
 		StringBuilder builder = new StringBuilder();
+		builder.append("type { ");
 		
 		String typeName = null;
 		switch (getType()) {
@@ -968,7 +979,7 @@ public class Type extends JSONValue {
 				typeName = getType().name().toLowerCase();
 				break;
 			case ENUM:
-				typeName = getType().name().toLowerCase()+"("+getEnumCode()+")";
+				typeName = getType().name().toLowerCase()+"e"+" '"+getEnumCode()+"'";
 				break;
 			default:
 				throw new NotImplementedException();
@@ -978,27 +989,53 @@ public class Type extends JSONValue {
 		
 		switch (getType()) {
 			case LIST:
-				builder.append(" : ");
+				builder.append("\n");
+				builder.append(StringUtils.leftPad("",currentIndent+indent));
 				builder.append(getListType().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
 				break;
 			case MAP:
-				for (Entry<String, Type> entry : getElementMap().entrySet()) {
+				if (("true").equals(getAttribute("block"))) builder.append(" box,");
+			
+				Integer i = 0;
+				Map<String, Type> elementMap = getElementMap();
+				for (Entry<String, Type> entry : elementMap.entrySet()) {
 					if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
 						currentNumberOfLines = currentNumberOfLines + 1;
 						builder.append("\n");
 						builder.append(StringUtils.leftPad(entry.getKey()+" : ", entry.getKey().length()+3+currentIndent+indent));
 						builder.append(entry.getValue().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
+						if (i < elementMap.size() - 1) builder.append(",");
 					}
 					else {
 						builder.append(" ...");
 						break;
 					}
+					i++;
 				}
 				break;
 			default:
 				break;
 		}
-		
+		switch (getType()) {
+			case NUMBER:
+			case BOOL:
+			case STRING:
+			case TEXT:
+			case DATE:
+			case ENUM:
+				builder.append(" }");
+				break;
+			case LIST:
+			case MAP:
+				if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
+					builder.append("\n");
+					builder.append(StringUtils.leftPad("",currentIndent));
+					builder.append("}");
+				}
+				break;
+			default:
+				throw new NotImplementedException();
+		}
 		return builder.toString();
 	}
 	

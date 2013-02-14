@@ -49,7 +49,7 @@ public abstract class DataElement<T extends DataValue> extends Data<T> {
 	
 	static constraints = {
 		type (nullable: false,  validator: {val, obj -> 
-			return val.isValid();
+			if (val != null) return val.isValid();
 		})
 	}
 	
@@ -66,7 +66,7 @@ public abstract class DataElement<T extends DataValue> extends Data<T> {
 	
 	void setType(Type type) {
 		this.cachedType = type
-		this.typeString = type.jsonValue
+		this.typeString = type?.jsonValue
 	}
 	
 	void setTypeString(String typeString) {

@@ -1086,17 +1086,35 @@ public class TypeUnitSpec extends UnitSpec {
 		def type = null
 		
 		when:
+		type = Type.TYPE_ENUM('TheGreatEnum')
+		
+		then:
+		type.getDisplayedValue(2, null) == "type { enume 'TheGreatEnum' }"
+		
+		when:
 		type = Type.TYPE_MAP (["key1": Type.TYPE_NUMBER()]);
 		
 		then:
-		type.getDisplayedValue(2, null) == "map\n  key1 : number"
-		type.getDisplayedValue(2, 1) == "map ..."
+		type.getDisplayedValue(2, null) == "type { map\n  key1 : type { number }\n}"
+		type.getDisplayedValue(2, 1) == "type { map ..."
 		
 		when:
 		type = Type.TYPE_MAP (["key1": Type.TYPE_NUMBER(), "key2": Type.TYPE_NUMBER()]);
 		
 		then:
-		type.getDisplayedValue(2, 2) == "map\n  key1 : number ..."
+		type.getDisplayedValue(2, 2) == "type { map\n  key1 : type { number }, ..."
+		
+		when:
+		type = Type.TYPE_LIST(Type.TYPE_MAP (["key1": Type.TYPE_NUMBER(), "key2": Type.TYPE_NUMBER()]));
+		
+		then:
+		type.getDisplayedValue(2, null) == "type { list\n  type { map\n    key1 : type { number },\n    key2 : type { number }\n  }\n}"
+		
+		when: // type with box = true
+		type = Type.TYPE_LIST(Type.TYPE_MAP(['key1': Type.TYPE_NUMBER(), 'key2': Type.TYPE_NUMBER()], true))
+		
+		then:
+		type.getDisplayedValue(2, null) == "type { list\n  type { map box,\n    key1 : type { number },\n    key2 : type { number }\n  }\n}"
 	}
 	
 	def "test transform"() {
