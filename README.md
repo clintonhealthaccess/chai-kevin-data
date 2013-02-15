@@ -89,6 +89,10 @@ We would have the following generic addresses :
 
 The ```Type``` class also offers a bunch of methods to manipulate, transforma Value and Type objects. See the javadoc for more details.
 
+Arbitrary attribute can be attached to a type using the JSONValue class `setAttribute(String attribute, String value)` and retrieved using the `getAttribute(String attribute)` method. This way arbitrary information can be stored on a type.
+
+An example of one of that information is the `block` flag, which, for a `map` type, indicates whether the map should be displayed as a block in the survey (cf. [dhsst readme][dhsst]).
+
 Values
 ---
 
@@ -108,12 +112,11 @@ To store values, we use instances of the **Value** class. It works similarly to 
 
 A value object is always paired with its corresponding type object, and the Type class contains several methods that help manipulate the value itself (cf. javadoc). The type is not saved with the value though, but taken externally. For example if one is manipulating a data element of type ```number```, it can be assumed that all values retrieved for this data element will be of hold ```number``` values.
 
+Similarly to the Type, one can add arbitrary attribute to a value using the `get/setAttribute` methods on the inherited JSONValue class.
+
 #### Null values
 
-A value can be ```null```, for which the JSON representation is ```{"value": null}```. To test if a value is null, use the ```isNull()``` method on the Value class. Null values are handled specially by the JAQL language explained below.
-
-
-TODO json attirbutes
+A value can be ```null```, for which the JSON representation is ```{"value": null}```. To test if a value is null, use the ```isNull()``` method on the Value class. Null values are handled specially by the JAQL language explained below. To create a null value, use the Value class `NULL_INSTANCE()` static method.
 
 JAQL
 ---
@@ -128,7 +131,24 @@ You will have to store it in a normalized data element of type ```{type: number}
 
 	$1 -> filter ($.last_name == "Smith")
 
-TODO explain null vs. isnull
+#### Null values
+
+In JAQL, null values are handled in various ways depending on where inside the value the null is found. The JAQL `isnull` function can be used to test for a null value inside a complex type. To test if the value itself is null, you have to use the comparison with the `"null"` string. This is due to a limitation of JAQL library.
+
+Let's take the example of a data of id `13` with the following type :
+
+	- list (type: map)
+		- first_name: string
+		- last_name: string
+		- birthday: date
+		
+To test whether the whole list is null, we use the following :
+
+	if ($13 == "null") true else false
+	
+To test whether the birthday of the first row is null :
+
+	if (isnull($13[0].birthday)) true else false
 
 Class hierarchy & APIs
 ---
@@ -152,14 +172,9 @@ Data classes have corresponding value classes which describe how the values are 
 
 Classes which inherit the ```DataElement``` class (**raw data element** and **normalized data element**) each have one associated value for each data location and period. They are instances of the ```RawDataElementValue``` class and ```NormalizedDataElementValue``` class respectively.
 
-TODO explain value does not exist vs isNull
-- for raw data element
-- for normalized data element
+There are 2 different types of null values. The value is null or inexistant when the RawDataElementValue is not present in the database for a given period and data location. When the RawDataElementValue is there but the value stored is `null` is the other type.
 
 ##### Values for calculations
-
-TODO explain no value vs isNull
-TODO explain when values are skipped
 
 Classes which inherit the ```Calculation``` class each have one associated value for each location, period and data location type. This allows one to look at calculations at a higher level and filter by data location type. Those values are called **partial values** are instances of the ```CalculationPartialValue``` class (this class is abstract and each calculation has its corresponding concrete implementation of that class).
 
@@ -181,6 +196,31 @@ The Value classes are structured as follows:
 			SummValue.groovy
 			AggregationValue.groovy
 			ModeValue.groovy
+
+#### Null values handling
+
+NormalizedDataElement values handle inexistant value differently than null values. An inexistant value is simply skipped, and the NormalizedDataElementValue will store a null instance.
+
+	expression		values				result
+	----------		------				------
+	$13				value not in DB		Value.NULL_INSTANCE()
+	$13				value is null		Value.NULL_INSTANCE()
+	
+In both cases, the *status* flag of the NormalizedDataElementValue is set to `VALID`. Therefore, when a NormalizedDataElementValue holds `Value.NULL_INSTANCE()`, it is not possible to tell whether it is because it references a non-existant NormalizedDataElementValue or a value that is `Value.NULL_INSTANCE()`.
+
+There are 2 other cases where a NormalizedDataElementValue will hold `Value.NULL_INSTANCE()`:
+
+- When an data element referenced to in an expression has been deleted, the status flag is set to `MISSING_DATA_ELEMENT`.
+- When the NormalizedDataElement is missing an expression for a certain period and/or location type, the status flag is set to `MISSING_EXPRESSION`.
+- When the expression is not well-formed, the status flag is set to `ERROR`.
+
+For calculations, a partial value will hold a `Value.NULL_INSTANCE` in those cases :
+- The expression is not well-formed or contains an error (division by zero for example).
+- All the values to aggregate are either `Value.NULL_INSTANCE` or do not exist in the database.
+
+Values that do not exist and values that are null are treated the same by the calculation. They are simply ignored in the aggregation and the data location they belong to will not be counted in the aggregation.
+
+### API
 
 There are a few API that allow manipulation of data and values, they are the ```DataService``` that contains methods to retrieve data (data elements and calculations), ```ExpressionService``` that contains methods to calculate **normalized data elements** and **calculations**, the ```ValueService``` that contains methods to retrieve values from the database and the ```RefreshValueService``` that contains method to refresh some or all of the **normalized data elements** and **calculations** using the ```ValueService``` and ```ExpressionService```. 
 
