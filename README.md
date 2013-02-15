@@ -33,28 +33,45 @@ TODO values stored by data location type too
 Data types
 ---
 
-Types define what kind of data is stored in a data element. There are simple and complex types, which allow to store almost any type of data. The types can be retrieved and manipulated as an instance of the ```Type``` class. The types are defined using a JSON notation that's also described below:
+Types define what kind of data is stored in a data element. There are simple and complex types, which allow to store almost any type of data. The types can be retrieved and manipulated as an instance of the ```Type``` class. The types are stored in the database using a JSON notation that's described below. There is a simpler notation for the end-user that's also described here:
 
 The following simple types are available:
 
-* number ```{type: number}```
-* string ```{type: string}```
-* text (a long string) ```{type: text}```
-* bool ```{type: bool}```
-* date ```{type: date}```
-* enum ```{type: enum, code: "<enum_code>"}```, where ***<enum_code>*** is the code of the corresponding enum.
+	type		JSON				easy notation
+	----		----				-------------
+	number 		{type: "number"}	type { number }
+	bool 		{type: "bool"}		type { bool }
+	date 		{type: "date"}		type { date }
+	enum 		{					type { enume('<enum_code>') }
+					type: "enum", 
+					code: "<enum_code>"
+				}					
+	
+In this list, ***<enum_code>*** is the code of the corresponding enum.
 
 The following complex types are available:
 
-* map ```{type: map, elements: <element_list>}```, where ***<element_list>*** is ```[{name: <element_name>, element_type: <type>}, …]```, where ***<element_name>*** is an arbitrary name to refer to the element inside the map, and ```<type>``` is any data type.
-* list ```{type: list, list_type: <type>}```
+* map ```{type: map, elements: <element_list>}```, where ***<element_list>*** is ```[{name: <element_name>, element_type: <type>}, …]```, where ***<element_name>*** is an arbitrary name to refer to the element inside the map, and ```<type>``` is any data type. Easy notation: 
+
+		type { map 
+			<element_name>: <type>,
+			<element_name>: <type>,
+			...
+		}
+
+* list ```{type: list, list_type: <list_type>}```. Easy notation:
+
+		type { list
+			<list_type>
+		}
 
 So you can combine the complex types with simple types to create complex list and maps. For example, to record information about the staff at certain data locations, you can create the following type:
 
-	- list (type: map)
-		- first_name: string
-		- last_name: string
-		- birthday: date
+	type { list type { map
+		first_name: type { string },
+		last_name: type { string },
+		birthday: type { date }
+	} }
 
 The JSON notation for that type would be
 
@@ -64,14 +81,17 @@ When a type is of complex type, each nested type can be accessed using an *addre
 
 Let's take another example of type with nested maps :
 
-	- list (type: map)
-		- personal_information: map
-			- first_name: string
-			- last_name: string
-			- birthday: date
-		- work_history: map
-			- employer
-			- function
+	type { list type { map
+		personal_information: type { map
+			first_name: type { string },
+			last_name: type { string } 
+			birthday: type { date }
+		}
+		work_history: type { map
+			employer: type { string }
+			function: type { string }
+		}
+	} }
 			
 We would have the following generic addresses :
 
@@ -137,10 +157,11 @@ In JAQL, null values are handled in various ways depending on where inside the v
 
 Let's take the example of a data of id `13` with the following type :
 
-	- list (type: map)
-		- first_name: string
-		- last_name: string
-		- birthday: date
+	type { list type { map
+		first_name: type { string },
+		last_name: type { string },
+		birthday: type { date }
+	} }
 		
 To test whether the whole list is null, we use the following :
 
@@ -320,6 +341,6 @@ It would therefore refresh the data in the order ```$10 -> $20 -> $2 -> $1 -> $3
 
 [BSD 3-clause License]: http://www.w3.org/Consortium/Legal/2008/03-bsd-license.html
 [CHAI]: http://www.clintonhealthaccess.org
-[grails-chai-locations]: http://github.com/fterrier/grails-chai-locations
+[grails-chai-locations]: http://github.com/clintonhealthaccess/grails-chai-locations
 [DHSST]: http://www.dhsst.org
 [JAQL]: http://code.google.com/p/jaql/
