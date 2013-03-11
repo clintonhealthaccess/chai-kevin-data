@@ -14,7 +14,7 @@ import org.springframework.cache.ehcache.EhCacheManagerFactoryBean
 
 class ChaiKevinDataGrailsPlugin {
     
-    def version = "0.1.8-CHAI"
+    def version = "0.1.9-CHAI"
     def grailsVersion = "2.1 > *"
     def dependsOn = [:]
     def pluginExcludes = [

@@ -1086,6 +1086,12 @@ public class TypeUnitSpec extends UnitSpec {
 		def type = null
 		
 		when:
+		type = new Type()
+
+		then:
+		type.getDisplayedValue(2, null) == ""
+
+		when:
 		type = Type.TYPE_ENUM('TheGreatEnum')
 		
 		then:

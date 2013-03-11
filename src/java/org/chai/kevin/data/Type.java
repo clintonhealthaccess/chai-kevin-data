@@ -146,16 +146,23 @@ public class Type extends JSONValue {
 	}
 	
 	public boolean isValid() {
-		if (getType() == null) return false;
+		if (getType() == null){
+			if (log.isDebugEnabled()) log.debug("getType()="+getType());
+			return false;
+		}
 		switch (getType()) {
 		case LIST:
 			return getListType().isValid();
 		case MAP:
 			for (Type type : getElementMap().values()) {
-				if (!type.isValid()) return false;
+				if (!type.isValid()){
+					if (log.isDebugEnabled()) log.debug("getType()="+getType());
+					return false;
+				}
 			}
 			break;
 		case ENUM:
+			if (log.isDebugEnabled()) log.debug("getType.getEnumCode()="+getEnumCode());
 			return getEnumCode() != null;
 		}
 		return true;
@@ -965,76 +972,79 @@ public class Type extends JSONValue {
 		
 	private String getDisplayedValue(final int indent, int currentIndent, final Integer numberOfLines, Integer currentNumberOfLines) {
 		StringBuilder builder = new StringBuilder();
-		builder.append("type { ");
 		
-		String typeName = null;
-		switch (getType()) {
-			case NUMBER:
-			case BOOL:
-			case STRING:
-			case TEXT:
-			case DATE:
-			case LIST:
-			case MAP:
-				typeName = getType().name().toLowerCase();
-				break;
-			case ENUM:
-				typeName = getType().name().toLowerCase()+"e"+" '"+getEnumCode()+"'";
-				break;
-			default:
-				throw new NotImplementedException();
-		}
+		if(getType() != null){
+			builder.append("type { ");
 		
-		builder.append(typeName);
-		
-		switch (getType()) {
-			case LIST:
-				builder.append("\n");
-				builder.append(StringUtils.leftPad("",currentIndent+indent));
-				builder.append(getListType().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
-				break;
-			case MAP:
-				if (("true").equals(getAttribute("block"))) builder.append(" box,");
+			String typeName = null;
+			switch (getType()) {
+				case NUMBER:
+				case BOOL:
+				case STRING:
+				case TEXT:
+				case DATE:
+				case LIST:
+				case MAP:
+					typeName = getType().name().toLowerCase();
+					break;
+				case ENUM:
+					typeName = getType().name().toLowerCase()+"e"+" '"+getEnumCode()+"'";
+					break;
+				default:
+					throw new NotImplementedException();
+			}
 			
-				Integer i = 0;
-				Map<String, Type> elementMap = getElementMap();
-				for (Entry<String, Type> entry : elementMap.entrySet()) {
-					if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
-						currentNumberOfLines = currentNumberOfLines + 1;
-						builder.append("\n");
-						builder.append(StringUtils.leftPad(entry.getKey()+" : ", entry.getKey().length()+3+currentIndent+indent));
-						builder.append(entry.getValue().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
-						if (i < elementMap.size() - 1) builder.append(",");
-					}
-					else {
-						builder.append(" ...");
-						break;
-					}
-					i++;
-				}
-				break;
-			default:
-				break;
-		}
-		switch (getType()) {
-			case NUMBER:
-			case BOOL:
-			case STRING:
-			case TEXT:
-			case DATE:
-			case ENUM:
-				builder.append(" }");
-				break;
-			case LIST:
-			case MAP:
-				if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
+			builder.append(typeName);
+			
+			switch (getType()) {
+				case LIST:
 					builder.append("\n");
-					builder.append(StringUtils.leftPad("",currentIndent));
-					builder.append("}");
-				}
-				break;
-			default:
-				throw new NotImplementedException();
+					builder.append(StringUtils.leftPad("",currentIndent+indent));
+					builder.append(getListType().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
+					break;
+				case MAP:
+					if (("true").equals(getAttribute("block"))) builder.append(" box,");
+				
+					Integer i = 0;
+					Map<String, Type> elementMap = getElementMap();
+					for (Entry<String, Type> entry : elementMap.entrySet()) {
+						if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
+							currentNumberOfLines = currentNumberOfLines + 1;
+							builder.append("\n");
+							builder.append(StringUtils.leftPad(entry.getKey()+" : ", entry.getKey().length()+3+currentIndent+indent));
+							builder.append(entry.getValue().getDisplayedValue(indent, currentIndent+indent, numberOfLines, currentNumberOfLines));
+							if (i < elementMap.size() - 1) builder.append(",");
+						}
+						else {
+							builder.append(" ...");
+							break;
+						}
+						i++;
+					}
+					break;
+				default:
+					break;
+			}
+			switch (getType()) {
+				case NUMBER:
+				case BOOL:
+				case STRING:
+				case TEXT:
+				case DATE:
+				case ENUM:
+					builder.append(" }");
+					break;
+				case LIST:
+				case MAP:
+					if (numberOfLines == null || numberOfLines > currentNumberOfLines) {
+						builder.append("\n");
+						builder.append(StringUtils.leftPad("",currentIndent));
+						builder.append("}");
+					}
+					break;
+				default:
+					throw new NotImplementedException();
+			}
 		}
 		return builder.toString();
 	}
