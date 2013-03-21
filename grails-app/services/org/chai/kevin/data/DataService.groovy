@@ -128,7 +128,7 @@ class DataService {
 	 * @param data the data to delete
 	 */
 	public void delete(Data data) {
-		if (!getReferencingData(data).isEmpty()) throw new IllegalArgumentException("other data are still referencing the element being deleted")
+		if (!getReferencingData(data).isEmpty()) throw new IllegalArgumentException("there are still data referencing the element being deleted")
 		if (valueService.getNumberOfValues(data) != 0) throw new IllegalArgumentException("there are still values associated to the element being deleted");
 		else data.delete();
 	}

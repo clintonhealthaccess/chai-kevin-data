@@ -34,6 +34,7 @@ import org.chai.kevin.data.Data;
 import org.chai.kevin.data.DataElement;
 import org.chai.kevin.data.NormalizedDataElement;
 import org.chai.kevin.data.RawDataElement;
+import org.chai.kevin.data.Mode;
 import org.chai.kevin.data.Summ;
 import org.chai.kevin.data.Type;
 import org.chai.location.DataLocationType;
@@ -308,7 +309,7 @@ class DataServiceSpec extends IntegrationTests {
 	def "delete mode with associated values throws exception"() {
 		when:
 		setupLocationTree()
-		def calculation = newMode("1", CODE(1),  Type.TYPE_LIST(Type.TYPE_NUMBER()))
+		def calculation = newMode("1", CODE(1), Type.TYPE_NUMBER())
 		def period = newPeriod()
 		newModePartialValue(calculation, period, DataLocation.findByCode(KIVUYE), DataLocationType.findByCode(HEALTH_CENTER_GROUP), Value.NULL_INSTANCE())
 

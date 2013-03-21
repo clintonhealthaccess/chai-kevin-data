@@ -114,7 +114,7 @@ public class ValueService {
 	 */
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly=true)
-	public <T extends DataValue> List<T> searchDataValues(String text, DataElement<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
+	public <T extends DataValue> List<T> searchDataValues(String text, Data<T> data, DataLocation dataLocation, Period period, Map<String, Object> params) {
 		if (log.isDebugEnabled()) log.debug("searchDataValues(text="+text+", data="+data+", period="+period+", dataLocation="+dataLocation+")");
 		Criteria criteria = getCriteria(data, dataLocation, period);
 		if (dataLocation == null) criteria.createAlias("location", "location");
